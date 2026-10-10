@@ -1,0 +1,38 @@
+<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Importar mis registros — Fitness</title><style>body{background:#04121e;color:#d8f8ff;font:16px system-ui;max-width:560px;margin:8vh auto;padding:25px}.box{border:1px solid #168eb9;background:#09263a;border-radius:14px;padding:25px}h1{color:#58e7ff}a{color:#5be7ff}button{padding:14px 20px;background:#047fa4;border:0;color:white;border-radius:8px;font-size:16px}</style><div class="box"><h1>Importar mis registros</h1><p id="status">Preparando actualización privada…</p><p id="action"></p></div><script>
+(function(){
+const stat=document.getElementById('status'),action=document.getElementById('action');
+try {
+  if(!location.hash.startsWith('#datos='))throw Error('Falta el paquete de datos en el enlace.');
+  const payload=JSON.parse(decodeURIComponent(location.hash.slice(7)));
+  if(!payload||!Array.isArray(payload.weights))throw Error('Paquete incompleto.');
+  const key='fitness_dashboard_v1';
+  const old=JSON.parse(localStorage.getItem(key)||'{}');
+  const data=Object.assign({weights:[],gym:[],food:[],wearable:[]},old);
+  for(const w of payload.weights){
+    const v=Number(w.value??w.kg);
+    if(/^\d{4}-\d{2}-\d{2}$/.test(w.date||'')&&v>0&&v<400){
+      data.weights=data.weights.filter(x=>x.date!==w.date);
+      data.weights.push({date:w.date,value:v});
+    }
+  }
+  if(Array.isArray(payload.gym))for(const g of payload.gym){
+    if(!g.date||!g.exercise||!Number.isFinite(Number(g.load)))continue;
+    if(!data.gym.some(x=>x.exercise===g.exercise&&x.date===g.date&&Number(x.load)===Number(g.load)))
+      data.gym.push({date:g.date,routine:g.routine||'—',exercise:g.exercise,load:Number(g.load),sets:Number(g.sets)||0,reps:Number(g.reps)||0});
+  }
+  if(Array.isArray(payload.food))for(const f of payload.food){
+    if(!data.food.some(x=>JSON.stringify(x)===JSON.stringify(f)))data.food.push(f);
+  }
+  if(Array.isArray(payload.wearable))for(const w of payload.wearable){
+    if(!data.wearable.some(x=>JSON.stringify(x)===JSON.stringify(w)))data.wearable.push(w);
+  }
+  if(payload.profile&&typeof payload.profile==='object')data.profile=Object.assign({},data.profile||{},payload.profile);
+  if(Array.isArray(payload.progress))data.progress=payload.progress;
+  localStorage.setItem(key,JSON.stringify(data));
+  history.replaceState(null,'',location.pathname);
+  stat.textContent='Registros actualizados en este navegador. Los datos no se han subido a GitHub.';
+  action.innerHTML='<a href="./">Abrir mi dashboard actualizado →</a>';
+  setTimeout(()=>location.replace('./'),1200);
+}catch(e){stat.textContent='No se ha importado nada: '+e.message;action.innerHTML='<a href="./">Volver al dashboard</a>'}
+})();
+</script></html>
