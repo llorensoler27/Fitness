@@ -35,7 +35,7 @@ try {
       const at=data.exerciseHistory.findIndex(x=>x.routine===row.routine&&x.exercise===row.exercise);
       const prior=at<0?[]:(data.exerciseHistory[at].records||[]);
       const byDate=new Map(prior.filter(x=>x.date).map(x=>[x.date,x]));
-      for(const v of row.records){if(/^\\d{4}-\\d{2}-\\d{2}$/.test(v.date||''))byDate.set(v.date,v)}
+      for(const v of row.records){if(/^\d{4}-\d{2}-\d{2}$/.test(v.date||''))byDate.set(v.date,v)}
       const record={routine:row.routine,exercise:row.exercise,records:[...byDate.values()].sort((a,b)=>a.date.localeCompare(b.date))};
       if(at<0)data.exerciseHistory.push(record);else data.exerciseHistory[at]=record;
     }
