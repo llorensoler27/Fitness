@@ -4,6 +4,17 @@ const stat=document.getElementById('status'),action=document.getElementById('act
 try {
   if(!location.hash.startsWith('#datos='))throw Error('Falta el paquete de datos en el enlace.');
   const payload=JSON.parse(decodeURIComponent(location.hash.slice(7)));
+  if(Array.isArray(payload.w))payload.weights=payload.w.map(x=>({date:x[0],value:x[1]}));
+  if(Array.isArray(payload.x)&&payload.dates){
+    payload.exerciseHistory=payload.x.map(([routine,exercise,values,notes])=>({
+      routine,exercise,records:values.map((value,i)=>({
+        date:payload.dates[routine][i],
+        ...(value==='PP'?{bodyweight:true}:{kg:value}),
+        ...(notes&&notes[i]?{note:'ATX +8 · máquina diferente'}:{})
+      }))
+    }));
+  }
+
   if(!payload||!Array.isArray(payload.weights))throw Error('Paquete incompleto.');
   const key='fitness_dashboard_v1';
   const old=JSON.parse(localStorage.getItem(key)||'{}');
